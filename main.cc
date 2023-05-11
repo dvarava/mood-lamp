@@ -1,9 +1,14 @@
 #include <Bridge.h>
 #include <BlynkSimpleYun.h>
+#include <WiFiNINA.h>
 
 #define BLYNK_TEMPLATE_ID "TMPL4aE1xXZAy"
 #define BLYNK_TEMPLATE_NAME "Quickstart Template"
 #define BLYNK_AUTH_TOKEN "seWmbsdAoAH_C13CrgbzW9DH-5Fd-9dO"
+
+const char* ssid = "ssd";
+const char* password = "pass";
+const IPAddress bulbIP(192, 168, 1, 100);
 
 // Define the color values for each mood
 const int happyColor[] = {255, 255, 0};
@@ -32,45 +37,83 @@ int ledPinB=10;
 void setup()
 {
   Serial.begin(9600);
+  
+  Serial.print("Connecting to");
+  Serial.println(ssid);
+  WiFi.begin(ssid, password);
 
-  // Initialize the Bridge
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Connecting...");
+  }
+
+  Serial.println("Connectd");
+}
+
   Bridge.begin();
 
   // Initialize Blynk
   Blynk.begin(BLYNK_AUTH_TOKEN);
-
-  // Set the LED pins as outputs
-  pinMode(redPin, OUTPUT);
-  pinMode(greenPin, OUTPUT);
-  pinMode(bluePin, OUTPUT);
 }
 
 void loop(){
   Blynk.run();
+  // Get the selected mood from user input (e.g. Blynk app)
+  int mood = getSelectedMood();
+  
+  // Set the color and brightness based on the selected mood
+  int* color = NULL;
+  int brightness = 0;
+  
+  switch (mood) {
+    case 1:
+      color = happyColor;
+      brightness = happyBrightness;
+      break;
+    case 2:
+      color = sadColor;
+      brightness = sadBrightness;
+      break;
+    case 3:
+      color = sleepyColor;
+      brightness = sleepyBrightness;
+      break;
+    case 4:
+      color = focusedColor;
+      brightness = focusedBrightness;
+      break;
+    case 5:
+      color = creativeColor;
+      brightness = creativeBrightness;
+      break;
+    case 6:
+      color = calmColor;
+      brightness = calmBrightness;
+      break;
+    case 7:
+      color = energeticColor;
+      brightness = energeticBrightness;
+      break;
+    default:
+      // Invalid mood selected
+      break;
+  }
+  
+  // Set the RGB values and brightness of the bulb
+  setBulbColor(color);
+  setBulbBrightness(brightness);
+  
+  // Wait for a few seconds before updating the mood again
+  delay(5000);
 }
 
-void setLedColor(int redValue, int greenValue, int blueValue) {
-  // Set the PWM values for the LED pins
-  analogWrite(redPin, redValue);
-  analogWrite(greenPin, greenValue);
-  analogWrite(bluePin, blueValue);
-
-  // Print the RGB values to the serial port
-  Serial.print("Red: ");
-  Serial.print(redValue);
-  Serial.print(", Green: ");
-  Serial.print(greenValue);
-  Serial.print(", Blue: ");
-  Serial.println(blueValue);
+int getSelectedMood() {
+  //code to select a mood
 }
 
-// Blynk function to handle color selection
-BLYNK_WRITE(V0) {
-  // Get the RGB values from the Blynk app
-  int redValue = param[0].asInt();
-  int greenValue = param[1].asInt();
-  int blueValue = param[2].asInt();
-
-  // Set the LED color
-  setLedColor(redValue, greenValue, blueValue);
-}
+void setBulbColor(int* color) {
+  String command = "setrgb " + String(color[0]) + " " + String(color[1]) + " " + String(color[2]) + "\r\n";
+  WiFiClient client;
+  if (client.connect(bulbIP, 5577)) {
+    client.print(command);
+  }
