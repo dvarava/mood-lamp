@@ -1,4 +1,9 @@
-#include <IRremote.hpp>
+#include <Bridge.h>
+#include <BlynkSimpleYun.h>
+
+#define BLYNK_TEMPLATE_ID "TMPL4aE1xXZAy"
+#define BLYNK_TEMPLATE_NAME "Quickstart Template"
+#define BLYNK_AUTH_TOKEN "seWmbsdAoAH_C13CrgbzW9DH-5Fd-9dO"
 
 // Define the color values for each mood
 const int happyColor[] = {255, 255, 0};
@@ -27,59 +32,45 @@ int ledPinB=10;
 void setup()
 {
   Serial.begin(9600);
-  IrReceiver.begin(IR_RECEIVE_PIN, ENABLE_LED_FEEDBACK); // Start the receiver
-  pinMode(ledPinR,OUTPUT);
-  pinMode(ledPinG,OUTPUT);
-  pinMode(ledPinB,OUTPUT);
+
+  // Initialize the Bridge
+  Bridge.begin();
+
+  // Initialize Blynk
+  Blynk.begin(BLYNK_AUTH_TOKEN);
+
+  // Set the LED pins as outputs
+  pinMode(redPin, OUTPUT);
+  pinMode(greenPin, OUTPUT);
+  pinMode(bluePin, OUTPUT);
 }
 
 void loop(){
-  if (IrReceiver.decode()) 
-  {
-    Serial.println(IrReceiver.decodedIRData.decodedRawData, HEX);
-    IrReceiver.printIRResultShort(&Serial);
-
-    switch(IrReceiver.decodedIRData.decodedRawData)
-    {
-      case 0xEF10BF00:
-        Serial.println("1(Happy)");
-      	setColorBrightness(happyColor, happyBrightness);
-        break;
-      case 0xEE11BF00:
-      	Serial.println("2(Sad)");
- 		setColorBrightness(sadColor, sadBrightness);
-        break;
-      case 0xED12BF00:
-      	Serial.println("3(Sleepy)");
- 		setColorBrightness(sleepyColor, sleepyBrightness);
-        break;
-      case 0xEB14BF00:
-      	Serial.println("4(Focused)");
- 		setColorBrightness(focusedColor, focusedBrightness);
-        break;
-      case 0xEA15BF00:
-      	Serial.println("5(Creative)");
- 		setColorBrightness(creativeColor, creativeBrightness);
-        break;
-      case 0xE916BF00:
-      	Serial.println("6(Calm)");
- 		setColorBrightness(calmColor, calmBrightness);
-        break;
-      case 0xE718BF00:
-      	Serial.println("7(Energetic)");
- 		setColorBrightness(energeticColor, energeticBrightness);
-        break;
-      default:
-        break;
-    }
-
-    IrReceiver.resume(); // Enable receiving of the next value
-  }
+  Blynk.run();
 }
 
-void setColorBrightness(const int color[], const int brightness) {
-  // Set the LED color and brightness
-  analogWrite(ledPinR, color[0] * brightness / 255);
-  analogWrite(ledPinG, color[1] * brightness / 255);
-  analogWrite(ledPinB, color[2] * brightness / 255);
+void setLedColor(int redValue, int greenValue, int blueValue) {
+  // Set the PWM values for the LED pins
+  analogWrite(redPin, redValue);
+  analogWrite(greenPin, greenValue);
+  analogWrite(bluePin, blueValue);
+
+  // Print the RGB values to the serial port
+  Serial.print("Red: ");
+  Serial.print(redValue);
+  Serial.print(", Green: ");
+  Serial.print(greenValue);
+  Serial.print(", Blue: ");
+  Serial.println(blueValue);
+}
+
+// Blynk function to handle color selection
+BLYNK_WRITE(V0) {
+  // Get the RGB values from the Blynk app
+  int redValue = param[0].asInt();
+  int greenValue = param[1].asInt();
+  int blueValue = param[2].asInt();
+
+  // Set the LED color
+  setLedColor(redValue, greenValue, blueValue);
 }
